@@ -1,4 +1,5 @@
-import { emit, pageId } from './base';
+import { uuid } from '../utils/methods';
+import { emit } from './base';
 
 let oldURL = window.location.href; // 最后一次的url
 let historyLength = window.history.length; // 最后一次history栈的长度
@@ -8,7 +9,7 @@ let historyLength = window.history.length; // 最后一次history栈的长度
  * option 请求参数
  */
 function tracePageView(option = {}) {
-  const { url = window.location.href, referer = oldURL, actions = '', params } = option;
+  const { $url = window.location.href, referer = oldURL, actions = '', params } = option;
   let action = actions;
   if (!action && window.history.length < 50) {
     action = historyLength === window.history.length ? 'back_forward' : 'navigation';
@@ -18,17 +19,23 @@ function tracePageView(option = {}) {
   // 为什么是17ms?  一秒60Hz是基准,平均1Hz是17毫秒,只要出来了页面那就有 document.title
   setTimeout(() => {
     emit({
-      eventType: 'pv',
-      eventId: pageId,
-      url,
-      referer,
-      params,
-      title: option.title || document.title,
-      action,
-      triggerTime: Date.now(),
+      $event: 'pageview',
+      $event_id: uuid(),
+      $type: "pv",
+      ext: {
+        $url,
+        $title: option.title || document.title,
+        $trigger_time: Date.now(),
+      },
+      property: {
+        ele_id: 'page',
+        referer,
+        params,
+        action,
+      }
     });
   }, option.title ? 0 : 17);
-  oldURL = url;
+  oldURL = $url;
   historyLength = window.history.length;
 }
 
@@ -42,22 +49,22 @@ function init(options = {}) {
   if (!pvCore) return;
 
   let lastIsPop = false; // 最后一次触发路由变化是否为popState触发
-  tracePageView({ url: oldURL, referer });
+  tracePageView({ $url: oldURL, referer });
 
   if (window.history.pushState) {
     // 劫持history.pushState history.replaceState
     const push = window.history.pushState.bind(window.history);
-    window.history.pushState = (data, title, url) => {
+    window.history.pushState = (data, title, $url) => {
       lastIsPop = false;
-      const result = push(data, title, url);
+      const result = push(data, title, $url);
       tracePageView({ actions: 'navigation' });
       return result;
     };
 
     const repalce = window.history.replaceState.bind(window.history);
-    window.history.replaceState = (data, title, url) => {
+    window.history.replaceState = (data, title, $url) => {
       lastIsPop = false;
-      const result = repalce(data, title, url);
+      const result = repalce(data, title, $url);
       tracePageView({ actions: 'navigation' });
       return result;
     };

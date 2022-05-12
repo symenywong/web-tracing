@@ -1,12 +1,18 @@
-import { map, filter } from '../utils/methods';
+import { map, filter, uuid } from '../utils/methods';
 import { emit } from './base';
 
-function setFullErrInfo(errorInfo) {
+function setFullErrInfo($event, errorInfo = {}) {
   const info = {
-    ...errorInfo,
-    eventType: 'error',
-    url: window.location.href,
-    triggerTime: Date.now(),
+    $event,
+    $event_id: uuid(),
+    $type: 'error',
+    ext: {
+      $url: window.location.href,
+      $title: document.title,
+      $trigger_time: Date.now(),
+    },
+    property: errorInfo
+
   };
   emit(info);
 }
@@ -69,11 +75,11 @@ function parseErrorEvent(event) {
   const { target, type } = event;
   // promise异常
   // 依旧使用code,不区分是否从promise中捕获的
-  if (type === 'unhandledrejection') return { eventId: 'code', ...parseError(event.reason) };
+  if (type === 'unhandledrejection') return { ele_id: 'code', ...parseError(event.reason) };
 
   // html元素上发生的异常错误
   if (target.nodeType === 1) {
-    const result = { eventId: target.nodeName };
+    const result = { ele_id: target.nodeName };
     switch (target.nodeName.toLowerCase()) {
       case 'link':
         result.src = target.href;
@@ -91,12 +97,12 @@ function parseErrorEvent(event) {
     e.fileName = e.filename || event.filename;
     e.columnNumber = e.colno || event.colno;
     e.lineNumber = e.lineno || event.lineno;
-    return { eventId: 'code', ...parseError(e) };
+    return { ele_id: 'code', ...parseError(e) };
   }
 
   // ie9版本,从全局的event对象中获取错误信息
   return {
-    eventId: 'code',
+    ele_id: 'code',
     line: window.event.errorLine,
     col: window.event.errorCharacter,
     message: window.event.errorMessage,
@@ -120,27 +126,27 @@ function init({ errorCore }) {
   // 劫持console.error
   const consoleError = console.error;
   console.error = function ce(...args) {
-    args.forEach((e) => { setFullErrInfo({ eventId: 'code', ...parseError(e) }) });
+    args.forEach((e) => { setFullErrInfo({ ele_id: 'code', ...parseError(e) }) });
     consoleError.apply(console, args);
   };
 }
 
 /**
  * 主动触发错误上报
- * @param {*} eventId 事件ID
+ * @param {*} ele_id 事件ID
  * @param {*} message 错误信息
  * @param {*} options 自定义配置信息
  * @returns 
  */
-function traceError(eventId, message, options = {}) {
-  const customErrorRecord = { eventId, errMessage: message, ...options };
+function traceError($event, message, options = {}) {
+  const customErrorRecord = { errMessage: message, ...options };
 
   // 针对自定义的异常上报,对params对特殊处理,将其序列化为string
   const { params } = customErrorRecord;
   if (params) {
     customErrorRecord.params = params;
   }
-  return setFullErrInfo(customErrorRecord);
+  return setFullErrInfo($event, customErrorRecord);
 }
 
 export default {

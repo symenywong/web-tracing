@@ -1,5 +1,5 @@
 {
-  "name": "web-tracing",
+  "name": "coros-trackjs",
   "devDependencies": {
     "lerna": "^4.0.0"
   },

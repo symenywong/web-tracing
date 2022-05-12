@@ -3,14 +3,28 @@ import { uuid } from '../utils/methods';
 
 class RequestTemplate {
   constructor(config = {}) {
-    const list = ['eventType', 'eventId', 'url', 'referer', 'action', 'params', 'millisecond'];
+    const list = ['$event', 'ele_id', '$url', 'referer', 'action', 'params', 'millisecond'];
+    list.forEach((key) => { this[key] = config[key] || null; });
+  }
+}
+class RequestBaseTemplateClick {
+  constructor(config = {}) {
+    const list = ['$url', '$title'];
+    list.forEach((key) => { this[key] = config[key] || null; });
+  }
+}
+class RequestPropertyTemplateClick {
+  constructor(config = {}) {
+    const list = ['x', 'y', 'ele_id', 'element_path', 'params'];
     list.forEach((key) => { this[key] = config[key] || null; });
   }
 }
 class RequestTemplateClick {
   constructor(config = {}) {
-    const list = ['eventType', 'eventId', 'url', 'params', 'title', 'x', 'y'];
+    const list = ['$event', '$event_id', '$type', '_track_id'];
     list.forEach((key) => { this[key] = config[key] || null; });
+    this.ext = new RequestBaseTemplateClick();
+    this.property = new RequestPropertyTemplateClick();
   }
 }
 
@@ -69,7 +83,7 @@ function getNodeXPath(node, curPath = '') {
  */
 function clickCollection() {
   document.addEventListener('click', (e) => { // 点击事件
-    const _config = new RequestTemplateClick({ eventType: 'click' });
+    const _config = new RequestTemplateClick({ $event: 'click' });
     debug('caught click event: ', e);
     let { path } = e;
     if (path === undefined) path = e.target ? getNodePath(e.target) : []; // 获取被点击的元素到最外层元素组成的数组
@@ -80,18 +94,19 @@ function clickCollection() {
         || el.hasAttribute('data-warden-title')));
     if (!target) return;
 
-    _config.title = extractTitleByTarget(target);
-    _config.eventId = extractDataByPath(path);
-    _config.params = extractParamsByPath(path);
-    _config.elementPath = getNodeXPath(target).slice(-128); // 长度限制128字符
+    _config.ext.$title = extractTitleByTarget(target);
+    _config.property.ele_id = extractDataByPath(path);
+    _config.$event_id = uuid();
+    _config.property.params = extractParamsByPath(path);
+    _config.property.element_path = getNodeXPath(target).slice(-128); // 长度限制128字符
     const { top, left } = e.target.getBoundingClientRect(); // 元素距离html的距离
     const { scrollTop, scrollLeft } = document.documentElement; // html距离上和左侧的距离(一般都是0)
     const x = left + scrollLeft;
     const y = top + scrollTop;
-    _config.x = x;
-    _config.y = y;
-    _config.triggerTime = Date.now(); // 点击时间
-    _config.url = window.location.href; // 当前页面的url
+    _config.property.x = x;
+    _config.property.y = y;
+    _config.ext.$trigger_time = Date.now(); // 点击时间
+    _config.ext.$url = window.location.href; // 当前页面的url
     emit(_config);
   }, true);
 }
@@ -100,18 +115,20 @@ function clickCollection() {
  * 加载 & 卸载事件
  */
 function dwellCollector(eventUnload) {
-  const _config = new RequestTemplate({ eventType: 'dwell' });
+  const _config = new RequestTemplateClick({ $event: 'dwell' });
   window.addEventListener('load', () => { // 加载完成事件
-    _config.entryTime = Date.now();
+    _config.property.entryTime = Date.now();
   }, true);
-
+  _config.$type = 'dwell'
   if (!eventUnload) return;
   window.addEventListener('beforeunload', () => { // 卸载事件
-    _config.eventId = uuid();
-    _config.url = window.location.href; // 当前页面 url
-    _config.referer = document.referrer; // 上级页面 url(从哪个页面跳过来的就是上级页面)
-    _config.triggerTime = Date.now(); // 卸载时间
-    _config.millisecond = Date.now() - _config.entryTime; // 停留多久
+    _config.property.ele_id = uuid();
+    _config.$event_id = uuid();
+    _config.ext.$title = '';
+    _config.ext.$url = window.location.href; // 当前页面 url
+    _config.property.referer = document.referrer; // 上级页面 url(从哪个页面跳过来的就是上级页面)
+    _config.ext.$trigger_time = Date.now(); // 卸载时间
+    _config.property.millisecond = Date.now() - _config.entryTime; // 停留多久
     const mapping = {
       0: 'navigate', // 网页通过点击链接,地址栏输入,表单提交,脚本操作等方式加载
       1: 'reload', // 网页通过“重新加载”按钮或者location.reload()方法加载
@@ -119,7 +136,7 @@ function dwellCollector(eventUnload) {
       255: 'reserved', // 任何其他来源的加载
     };
     const { type } = performance.navigation; // 表示加载来源, type为 0,1,2,255
-    _config.operateAction = mapping[type] || null;
+    _config.property.operateAction = mapping[type] || null;
     emit(_config, true);
   }, false);
 }
@@ -271,13 +288,25 @@ function init({ eventCore, eventUnload }) {
 
 /**
  * 主动触发事件上报
- * @param {*} eventId 事件ID
+ * @param {*} ele_id 事件ID
  * @param {*} title 事件标题
  * @param {*} params 自定义配置信息
  * @returns 
  */
-function traceCustomEvent(eventId, title, params = {}) {
-  emit({ eventId, title, params, eventType: 'custom', triggerTime: Date.now() });
+function traceCustomEvent($event, $title, params = {}) {
+  emit({
+    $event,
+    $event_id: uuid(),
+    $type: 'custom_event',
+    ext: {
+      $title: $title || document.title,
+      $trigger_time: Date.now(),
+      $url: params.url || location.href
+    },
+    property: {
+      ...params,
+    },
+  });
 }
 
 export default {

@@ -4,10 +4,12 @@ import http from './lib/http-request'
 import err from './lib/err'
 import event from './lib/event'
 import performance from './lib/performance'
-
+import { uuid } from './utils/methods'
+import { USER_KEY } from './utils/constant';
 const methods = {
   setCustomerId: base.setCustomerId,
-  setUserUuid: base.setUserUuid,
+  setUserId: base.setUserId,
+  setDistinctId: base.setDistinctId,
   traceError: err.traceError,
   tracePerformance: performance.tracePerformance,
   traceCustomEvent: event.traceCustomEvent,
@@ -15,14 +17,17 @@ const methods = {
 }
 
 const init = (options = {}) => {
+  base.setDistinctId();// 初始化;
+  // 查找是否存在userId, 如果存在, 先读取缓存userid
   const _options = {
-    requestUrl: '', // 请求地址
-    appName: '', // 应用名称
-    appCode: '', // 应用code
-    appVersion: '', // 应用版本
+    _track_id: uuid(),
+    appId: '',
+    appSecret: '',
+    request_url: '', // 请求地址
+    app_name: '', // 应用名称
+    app_version: '', // 应用版本
     ext: '', // 自定义全局附加参数
     debug: false, // 是否开启触发事件时控制台输出
-
     pvCore: false, // 页面跳转-是否自动发送页面跳转相关数据
     pvHashtag: false, // 页面跳转-浏览器的动作发生时(例如浏览器的回退按钮)是否监听hash变化,如果是hash路由请开启此开关
 
@@ -50,10 +55,11 @@ const init = (options = {}) => {
 
 const transitionOptions = (_options, options) => {
   const {
-    requestUrl,
-    appName,
-    appCode,
-    appVersion,
+    request_url,
+    appId,
+    appSecret,
+    app_name,
+    app_version,
     ext,
     debug,
     pv = {},
@@ -62,13 +68,14 @@ const transitionOptions = (_options, options) => {
     event = {},
   } = options;
 
-  if (!requestUrl) throw Error('请传入requestUrl参数');
-  if (!appName) throw Error('请传入appName参数');
+  if (!request_url) throw Error('请传入request_url参数');
+  if (!app_name) throw Error('请传入app_name参数');
 
-  _options.requestUrl = requestUrl;
-  _options.appName = appName;
-  _options.appCode = appCode;
-  _options.appVersion = appVersion;
+  _options.request_url = request_url;
+  _options.appId = appId;
+  _options.appSecret = appSecret;
+  _options.app_name = app_name;
+  _options.app_version = app_version;
   _options.ext = ext;
   _options.debug = debug;
 

@@ -50,19 +50,37 @@ function getCookieByName(name) {
   const result = document.cookie.match(new RegExp(`${name}=([^;]+)(;|$)`));
   return result ? result[1] : undefined;
 }
-
+function joinParams(params) {
+  let str = '';
+  for (const key in params) {
+    if (params[key] instanceof Array) {
+      str += key + '=' + params[key].join(',') + '&';
+    } else {
+      str += key + '=' + params[key] + '&';
+    }
+  }
+  str = str.slice(0, -1);
+  return str;
+}
 /**
  * 向下兼容发送信号的方法
  */
-const sendBeacon = navigator.sendBeacon
-  ? (url, data) => {
-    if (data) navigator.sendBeacon(url, JSON.stringify(data));
-  }
-  : (url, data) => {
-    // 传统方式传递参数
+const sendBeacon = (url, data, send_type) => {
+  if (send_type == 'sendBeacon') {
+    if (navigator.sendBeacon) {
+      if (data) navigator.sendBeacon(url, JSON.stringify(data));
+    } else {
+      const beacon = new Image();
+      let str = joinParams(data);
+      beacon.src = `${url}?${str}`;
+    }
+  } else {
     const beacon = new Image();
-    beacon.src = `${url}?v=${encodeURIComponent(JSON.stringify(data))}`;
-  };
+    let str = joinParams(data);
+    beacon.src = `${url}?${str}`;
+  }
+}
+
 
 const arrayMap = Array.prototype.map || function polyfillMap(fn) {
   const result = [];

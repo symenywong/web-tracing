@@ -1,3 +1,4 @@
+import { uuid } from '../utils/methods';
 import { emit } from './base';
 
 // 兼容判断
@@ -63,12 +64,16 @@ function traceResourcePerformance(performance) {
     attrKeys.forEach((attr) => { value[attr] = entry[attr] });
 
     records.push(normalizePerformanceRecord({
-      ...value,
-      eventType: 'performance',
-      eventId: 'resource',
-      src: entry.name,
-      triggerTime: Date.now(), // 非绝对精确,以拿到performance对象的时间来近似计算
-      url: window.location.href,
+      $event: 'performance',
+      property: {
+        ele_id: 'resource',
+        src: entry.name,
+        ...value,
+      },
+      ext: {
+        $trigger_time: Date.now(), // 非绝对精确,以拿到performance对象的时间来近似计算
+        $url: window.location.href,
+      },
     }));
   });
   if (records.length) emit(records);
@@ -101,12 +106,16 @@ function observeSourceInsert() {
           node.addEventListener('load', () => {
             const endTime = Date.now();
             records.push(normalizePerformanceRecord({ // 没有其他的时间属性,只记录能获取到的
-              eventType: 'performance',
-              eventId: 'resource',
-              src: node.src || node.href,
-              duration: endTime - startTime,
-              triggerTime: Date.now(),
-              url: window.location.href,
+              $event: 'performance',
+              property: {
+                ele_id: 'resource',
+                src: node.src || node.href,
+                duration: endTime - startTime,
+              },
+              ext: {
+                $trigger_time: Date.now(),
+                $url: window.location.href,
+              },
             }));
           });
         }
@@ -198,9 +207,9 @@ function observeNavigationTiming() {
 
   emit(normalizePerformanceRecord({
     ...times,
-    eventType: 'performance',
-    eventId: 'page',
-    url: window.location.href,
+    $event: 'performance',
+    ele_id: 'page',
+    $url: window.location.href,
   }));
 }
 
@@ -221,16 +230,22 @@ function init({ performanceFirstResource, performanceCore }) {
 
 /**
  * 主动触发性能事件上报
- * @param {*} eventId 事件ID
+ * @param {*} ele_id 事件ID
  * @param {*} options 自定义配置信息
  */
-function tracePerformance(eventId, options) {
+function tracePerformance($event, options = {}) {
   const record = {
-    triggerTime: Date.now(),
-    url: window.location.href,
-    ...options,
-    eventId,
-    eventType: 'performance',
+    $event,
+    $event_id: uuid(),
+    $type: 'performance',
+    ext: {
+      $trigger_time: Date.now(),
+      $url: window.location.href,
+      $title: document.title
+    },
+    property: options,
+
+
   };
   emit(normalizePerformanceRecord(record));
 }

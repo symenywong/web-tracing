@@ -1,29 +1,45 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Document</title>
-  </head>
 
-  <script src="../dist/index.umd.js"></script>
-  <script>
-    console.log(webtracing);
-    webtracing.init({
-      requestUrl: "http://172.15.224.10:33199/trackweb/tra",
-      appName: "chengxh",
-      event: true,
-    });
-  </script>
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Document</title>
+</head>
 
-  <body>
-    <button data-warden-event-id="demo01">demo01</button>
-    <br>
-    <button data-warden-event-id="demo02">demo02</button>
-    <br>
-    <button data-warden-event-id="demo03">demo03</button>
-    <br>
-    <button data-warden-event-id="demo04">demo04</button>
-  </body>
+<script src="../dist/index.umd.js"></script>
+<script>
+  webtracing.init({
+    request_url: "https://apicntest.coros.com/coros/collect/event/sv.gif",
+    app_name: "coros-traininghub",
+    event: true,
+    appId: 'xViCrF2yCst56X8HX5',
+    appSecret: 'k4TNaAlALNLFlzpXfvPlKGf22mCl4h7K77Ff',
+    debug: false,
+    ext: {
+      $send_type: 'sendBeacon',//sendBeacon, image 或者不填写此字段
+      $browser_timezone: -(new Date().getTimezoneOffset()) / 60,
+      $client_type: 10,
+      $app_version: '2.6.0',
+      $app_env: 'test'
+    }
+  });
+  console.log(webtracing);
+
+  // webtracing.methods.setUserId('423734538936532992');
+  webtracing.methods.tracePageView({ $event: 'pageView' })
+
+</script>
+
+<body>
+  <button data-warden-event-id="demo01">demo01</button>
+  <br>
+  <button data-warden-event-id="demo02">demo02</button>
+  <br>
+  <button data-warden-event-id="demo03">demo03</button>
+  <br>
+  <button data-warden-event-id="demo04">demo04</button>
+</body>
+
 </html>

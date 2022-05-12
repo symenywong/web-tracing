@@ -60,7 +60,7 @@ function interceptAjax(performanceServer, errorServer) {
   };
 
   // 劫持 send方法
-  XMLHttpRequest.prototype.send = function(body) {
+  XMLHttpRequest.prototype.send = function (body) {
     // body 就是post方法携带的参数
 
     // readyState发生改变时触发,也就是请求状态改变时
@@ -78,7 +78,7 @@ function interceptAjax(performanceServer, errorServer) {
             performance.tracePerformance('server', {
               src: responseURL,
               responseStatus: status,
-              duration: Date.now() - _config.triggerTime,
+              duration: Date.now() - _config.$trigger_time,
               params: body ? body : undefined,
             });
           }
@@ -92,7 +92,7 @@ function interceptAjax(performanceServer, errorServer) {
       }
     });
 
-    _config.triggerTime = Date.now();
+    _config.$trigger_time = Date.now();
     return send.call(this, body);
   };
 }
