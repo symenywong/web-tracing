@@ -1,5 +1,5 @@
 {
-  "name": "@coros-trackjs/vue",
+  "name": "coros-trackjs_vue",
   "version": "1.2.0",
   "description": "一个支持 vue2 / vue3 的【 行为埋点 / 性能采集 / 异常采集 / 请求采集 / 路由采集 】 插件",
   "main": "dist/index.cjs.js",
@@ -50,5 +50,6 @@
   },
   "dependencies": {
     "web-tracing": "^10.5.1"
-  }
+  },
+  "gitHead": "d373a0b64d6d6df2b85212e408878300d4787466"
 }
